@@ -1,0 +1,177 @@
+
+
+Nmap(network mapper) perform  SYN Scan -
+
+Starting Nmap 7.98 ( https://nmap.org ) at 2025-09-22 14:56 +0530
+Unable to get DNS servers: 0000006f
+mass_dns: warning: Unable to determine any DNS servers. Reverse DNS is disabled. Try using --system-dns or specify valid servers with --dns-servers
+Nmap scan report for 192.168.**.220
+Host is up (0.0013s latency).
+Not shown: 995 closed tcp ports (reset)
+PORT     STATE SERVICE
+135/tcp  open  msrpc
+139/tcp  open  netbios-ssn
+445/tcp  open  microsoft-ds
+5357/tcp open  wsdapi
+7070/tcp open  realserver
+
+
+
+Nmap done: 11 IP addresses (1 hosts up) scanned in 9.25 seconds
+
+
+2) Open Ports Found -
+PORT     STATE SERVICE
+135/tcp  open  msrpc
+139/tcp  open  netbios-ssn
+445/tcp  open  microsoft-ds
+5357/tcp open  wsdapi
+7070/tcp open  realserver
+
+3) show version of services-
+PORT     STATE SERVICE         VERSION
+135/tcp  open  msrpc           Microsoft Windows RPC
+139/tcp  open  netbios-ssn     Microsoft Windows netbios-ssn
+445/tcp  open  microsoft-ds    Microsoft Windows 7 - 10 microsoft-ds (workgroup: WORKGROUP)
+5357/tcp open  http            Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+7070/tcp open  ssl/realserver?
+
+4)Research common services running on those ports-
+| **Port**          | **Likely Service**                                 | **Risk Level**                   | **Notes**                                                                                                              |
+| ----------------- | -------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **135/tcp**       | MS RPC (Microsoft Remote Procedure Call)           |  High                          | Common attack vector for Windows (used in exploits like Blaster, MS08-067). Shouldn’t be exposed outside LAN.          |
+| **139/tcp**       | NetBIOS Session Service                            |  High                          | Legacy Windows file/printer sharing. Used with SMB; target for worms/ransomware.                                       |
+| **445/tcp**       | Microsoft SMB/CIFS                                 |  Critical                      | Core Windows file sharing. Frequently exploited (EternalBlue ? WannaCry). Must be firewalled.                          |
+| **5040/tcp**      | Windows Media DRM (license server)                 | Medium                           | Rarely needed. Can leak info if unpatched.                                                                             |
+| **7070/tcp**      | Real-Time Streaming Protocol (RealServer/Helix)    | Medium                           | Used for streaming; not common now. If running, may expose old/unused service.                                         |
+| **7680/tcp**      | Windows Delivery Optimization                      | Low–Medium                       | Used for Windows Update P2P distribution. Usually safe but can leak traffic patterns.                                  |
+| **8732/tcp**      | WCF (Windows Communication Foundation) Service     | Medium–High                      | Developer/test services sometimes left open. Risk if not authenticated.                                                |
+| **5357/tcp**      | Web Services for Devices (WSDAPI, Windows service) | Medium                           | Local device discovery. Rarely useful beyond LAN. Could leak printer/device info.                                      |
+| **1536–1541/tcp** | Oracle Net Listener / custom RPC ports             |  High (if Oracle DB installed) | These ports often belong to **Oracle database listener services**. Exposure can allow database enumeration or attacks. |
+
+5)Identify potential security risks from open ports
+    Windows SMB (139, 445)
+
+Biggest risk  ransomware, wormable exploits.
+
+Should never be exposed beyond local LAN.
+
+RPC (135, 1536–1541)
+
+Attackers can exploit to execute commands remotely if unpatched.
+
+Unused/Misc Ports (5040, 7070, 8732, 5357, 7680)
+
+May indicate background Windows s
+ 
+
+Interview Quetions
+1) What is open port?
+
+An open port is a network port on a computer or device that is actively configured to accept incoming connections.
+
+Think of a port as a door in a building:
+If the door is closed, no one can enter.
+If the door is open, people (or in this case, data) can enter or exit through it.
+
+In networking terms:
+
+Each device on a network has 65,535 ports (numbered 0–65535).
+Ports are used by applications and services to send and receive data (e.g., web servers, email servers, file sharing).
+An open port means some application or service is listening on that port and waiting for connections.
+
+For example:
+Port 80 (HTTP) – open if a web server is running.
+Port 443 (HTTPS) – open if a secure web server is running.
+Port 22 (SSH) – open if remote login is enabled.
+
+
+2) How does Nmap perform a TCP SYN scan? 
+
+A TCP SYN scan (also called a half-open scan) is Nmap’s most popular scanning technique (nmap -sS). It works like this:
+
+TCP Basics (3-way handshake):
+
+SYN ? client sends request to server
+SYN-ACK ? server acknowledges.
+ACK ? client finalizes the connection.
+
+How Nmap does a SYN scan
+Nmap does not complete the handshake. It just sends the first probe and observes the response:
+Nmap sends a SYN packet to the target port.
+Target responds in one of several ways:
+SYN-ACK ? Port is open (Nmap immediately sends a RST instead of ACK to avoid completing the connection).
+RST (Reset) ? Port is closed.
+No response / ICMP unreachable ? Port is filtered (likely blocked by a firewall).
+
+Nmap records the result and moves on to the next port
+
+3) What risks are associated with open ports? 
+
+open ports are double-edged swords. They enable communication, but each one is a potential doorway into your system.
+
+1. Unauthorized Access
+If a service on an open port has weak authentication or misconfiguration, attackers can log in or exploit it.
+Example: Port 22 (SSH) exposed to the internet with a weak password ? brute-force attack.
+
+2. Exploitation of Vulnerabilities
+Software listening on an open port may have security bugs.
+Example: Port 445 (SMB) was exploited by WannaCry ransomware to spread worldwide.
+
+3. Information Leakage
+Even if not exploitable, open ports reveal what services and versions you’re running.
+Attackers use port scanning to map your system before launching attacks.
+
+4. Denial of Service (DoS)
+Attackers can flood open ports with traffic, overwhelming the service.
+Example: Port 80/443 (web servers) are common DoS targets.
+
+5. Backdoors & Malware Communication
+Malware often installs itself to listen on a hidden open port for remote control.
+Attackers can also use open outbound ports to exfiltrate data.
+
+6. Firewall Bypass
+Misconfigured firewalls may leave unnecessary ports open, creating gaps in security.
+
+Example: Open database port (3306 for MySQL) exposed directly to the internet.
+
+4.Explain the difference between TCP and UDP scanning. 
+
+| Feature                | **TCP Scan**                       | **UDP Scan**                              |
+| ---------------------- | ---------------------------------- | ----------------------------------------- |
+| **Protocol**           | Connection-oriented (handshake)    | Connectionless (no handshake)             |
+| **Speed**              | Faster, more reliable              | Slower, less reliable                     |
+| **Detection**          | Easier to fingerprint (handshakes) | Harder to detect but noisier to firewalls |
+| **Port State Results** | Open, Closed, Filtered             | Open, Closed, Filtered, but ambiguous     |
+| **Common Services**    | HTTP, HTTPS, SSH, FTP, Telnet      | DNS, SNMP, DHCP, TFTP, VoIP               |
+
+5.How can open ports be secured? 
+
+Principle of least privilege ? Only keep ports open that are strictly required.
+Use netstat, ss, or nmap to list active ports, then disable unused services.
+
+  2. Use Firewalls
+     Configure host-based (e.g., ufw, iptables, Windows Firewall) and network firewalls.
+     Allow only trusted IPs/subnets to access sensitive ports (e.g., SSH, RDP, databases).
+     Block all other traffic by default (default deny rule).
+ 
+ 3. Secure Services Behind Ports
+    Enable strong authentication (SSH keys instead of passwords).
+    Use encryption (e.g., TLS/SSL for web and mail).
+    Regularly update software to patch vulnerabilities.
+
+6.What is a firewall's role regarding ports?
+
+A firewall’s role regarding ports is to filter, control, and monitor traffic going through them — keeping necessary services reachable while blocking unwanted or dangerous connections.
+
+7.What is a port scan and why do attackers perform it? 
+
+A port scan is essentially a reconnaissance method to find open doors (ports) and services on a system. Attackers use it to discover weaknesses and plan their next move.
+
+8.How does Wireshark complement port scanning
+| Tool                          | Purpose                                                                                            |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Port Scanner (e.g., Nmap)** | Actively probes a target to discover **open, closed, or filtered ports** and running services.     |
+| **Wireshark**                 | Passively **captures and analyzes network traffic**, showing actual packets flowing to/from ports. |
+
+
